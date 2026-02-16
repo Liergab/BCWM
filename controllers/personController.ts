@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import PersonService from '../services/personServices'
+import { PersonValidationSchemas } from '../util/validation/personZod'
 
 export const createPerson = async (
   req: Request,
@@ -7,7 +8,8 @@ export const createPerson = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const created = await PersonService.createPerson(req.body)
+    const payload = PersonValidationSchemas.createPerson.parse(req.body)
+    const created = await PersonService.createPerson(payload)
     res.status(201).json({ data: created })
   } catch (error) {
     next(error)
@@ -33,7 +35,8 @@ export const getPerson = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await PersonService.getPersonById(req.params.id)
+    const { id } = PersonValidationSchemas.idParam.parse({ id: req.params.id })
+    const data = await PersonService.getPersonById(id)
     if (!data) {
       res.status(404).json({ message: 'Person not found' })
       return
@@ -50,7 +53,9 @@ export const updatePerson = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await PersonService.updatePerson(req.params.id, req.body)
+    const { id } = PersonValidationSchemas.idParam.parse({ id: req.params.id })
+    const payload = PersonValidationSchemas.updatePerson.parse(req.body)
+    const data = await PersonService.updatePerson(id, payload)
     if (!data) {
       res.status(404).json({ message: 'Person not found' })
       return
@@ -67,7 +72,8 @@ export const deletePerson = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const deleted = await PersonService.deletePerson(req.params.id)
+    const { id } = PersonValidationSchemas.idParam.parse({ id: req.params.id })
+    const deleted = await PersonService.deletePerson(id)
     if (!deleted) {
       res.status(404).json({ message: 'Person not found' })
       return

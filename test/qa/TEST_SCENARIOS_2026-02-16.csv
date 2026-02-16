@@ -1,0 +1,8 @@
+ID,Scenario,Type,Priority,Expected Result,Actual Result,Status,Evidence
+QA-01,TypeScript build compiles project,Regression,High,"Build exits 0","Build exits 0 (tsc passed)",PASS,"npm run build"
+QA-02,ESLint quality check,Regression,High,"Lint exits 0","ESLint v9 config missing (eslint.config.js not found)",FAIL,"npm run lint"
+QA-03,Jest test suite health,Regression,High,"All test suites pass","2 suites fail: __tests__/setup.ts and services/test.ts contain no tests",FAIL,"npm run test"
+QA-04,Health endpoint automated contract,API Positive,High,"Health endpoint tests pass","health.test.ts passed (4 tests)",PASS,"npm run test -> __tests__/health.test.ts"
+QA-05,Protected route unauthorized access (/users/me),API Security,High,"401/403 when no auth token","Not executed in this run",NOT_EXECUTED,"Manual API test pending"
+QA-06,Register -> verify -> login flow,API Positive,High,"Valid auth lifecycle and correct status codes","Not executed in this run",NOT_EXECUTED,"Manual API test pending"
+QA-07,Person CRUD validation and error handling,API Functional,Medium,"Validation enforced and CRUD behaves correctly","Not executed in this run",NOT_EXECUTED,"Manual API test pending"

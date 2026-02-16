@@ -1,0 +1,3 @@
+DefectID,Title,Severity,Area,Environment,StepsToReproduce,Expected,Actual,Status,Owner
+DEF-001,ESLint config incompatible with ESLint v9,High,Tooling/CI,Local (Windows),"Run npm run lint","Lint succeeds","ESLint fails: could not find eslint.config.js",Open,Backend
+DEF-002,Jest includes non-test files as test suites,High,Testing/CI,Local (Windows),"Run npm run test","All suites pass or non-test files ignored","__tests__/setup.ts and services/test.ts fail with ""must contain at least one test""",Open,Backend

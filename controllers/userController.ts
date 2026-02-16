@@ -12,17 +12,19 @@ export const createUser = async (
 ): Promise<void> => {
   try {
     const userData = ValidationSchemas.createUser.parse(req.body);
-    const { user, token } = await UserService.createUser(userData);
+    const { user, token, message } = await UserService.createUser(userData);
 
-    res.cookie("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== "development",
-      sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    if (token) {
+      res.cookie("auth-token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== "development",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+    }
 
-    res.status(201).json({ user, token });
+    res.status(201).json({ user, token, message });
   } catch (error: any) {
     if (error?.message === "User already exists") {
       res.status(409);
@@ -51,11 +53,78 @@ export const login = async (
     if (error?.message === "User does not exist" || error?.message === "Invalid Password") {
       res.status(httpError.UNAUTHORIZED);
     }
-    if (error?.message === "Account is not verified") {
+    if (
+      typeof error?.message === "string" &&
+      error.message.startsWith("Account is not verified")
+    ) {
+      res.status(httpError.FORBIDDEN);
+    }
+    if (
+      typeof error?.message === "string" &&
+      error.message.startsWith("Account is inactive")
+    ) {
       res.status(httpError.FORBIDDEN);
     }
     next(error);
   }
+};
+
+export const logout = async (_req: Request, res: Response): Promise<void> => {
+  res.clearCookie("auth-token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "lax",
+    path: "/",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const verificationData = ValidationSchemas.verifyEmail.parse(req.body);
+    const { user, token, message } = await UserService.verifyEmail(verificationData);
+
+    res.cookie("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "development",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    res.status(200).json({ user, token, message });
+  } catch (error: any) {
+    if (error?.message === "User does not exist") {
+      res.status(httpError.NOT_FOUND);
+    }
+    if (error?.message === "Account already verified") {
+      res.status(httpError.CONFLICT);
+    }
+    if (
+      error?.message === "Verification code is not available" ||
+      error?.message === "Verification code expired" ||
+      error?.message === "Invalid verification code"
+    ) {
+      res.status(httpError.VALIDATION_ERROR);
+    }
+    next(error);
+  }
+};
+
+export const getCurrentUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  if (!req.user) {
+    res.status(httpError.UNAUTHORIZED).json({ message: "Not Authorized" });
+    return;
+  }
+
+  res.status(200).json({ data: req.user });
 };
 
 // Get a user by ID
@@ -158,6 +227,30 @@ export const updateUser = async (
       res.status(404);
       throw new Error("User not found");
     }
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const updateCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(httpError.UNAUTHORIZED).json({ message: "Not Authorized" });
+      return;
+    }
+
+    const userData = ValidationSchemas.updateUser.parse(req.body);
+    const updatedUser = await UserService.updateUser(req.user.id, userData);
+    if (!updatedUser) {
+      res.status(httpError.NOT_FOUND).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json(updatedUser);
   } catch (error: any) {
     next(error);
   }

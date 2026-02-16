@@ -1,0 +1,6 @@
+FindingID,Title,Severity,Area,WhyItMatters,SuggestedChange,Status
+RV-001,Self-service privilege escalation on PUT /users/me,Critical,Security/Authorization,"Authenticated user can update role/isVerified/status via shared update DTO, enabling privilege abuse","Create a restricted self-update schema (exclude role,isVerified,status) and use it in updateCurrentUser",Open
+RV-002,Inactive-account auto-activation path is unreachable,High,Business Logic,"Login throws for inactive users before reactivation code, causing contradictory behavior and maintenance confusion","Choose one policy: block inactive and remove reactivation code, or allow reactivation before token issuance",Open
+RV-003,ESLint pipeline incompatible with ESLint v9,High,Tooling/Release,"Lint gate fails, lowering release confidence and CI readiness","Add eslint.config.js flat config or align ESLint version/config",Open
+RV-004,Jest test discovery includes non-test files,High,Testing/Release,"Test suite fails due to files with no tests; quality gate stays red","Adjust jest testMatch/testPathIgnorePatterns and move setup file to setupFilesAfterEnv",Open
+RV-005,Prisma query typed with as any in user search,Medium,Type Safety/Maintainability,"Type safety bypass can hide schema/client mismatch and runtime defects","Regenerate Prisma client and remove any-cast query fallback",Open

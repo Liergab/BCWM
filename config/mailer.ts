@@ -32,7 +32,7 @@ async function sendEmail(subject: string, recipient: string, templateName: strin
 
     const mailOptions: MailOptions = {
         from: {
-            name: 'Website Name',
+            name: 'BCWM Unisan',
             address: env.EMAIL_TEST,
         },
         to: recipient,

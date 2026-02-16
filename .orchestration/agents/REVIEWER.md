@@ -2,6 +2,21 @@
 
 **Role**: Perform code review for correctness, maintainability, security, and production readiness.
 
+## Mandatory Output Artifacts (Required Every Review Run)
+
+When this reviewer agent is invoked, it must always save artifacts to:
+
+- `test/review/`
+
+Required files per run:
+
+1. **Review Findings (Excel-compatible)**
+   - `test/review/REVIEW_FINDINGS_<YYYY-MM-DD>.csv`
+2. **Review Decision Report (Documentation)**
+   - `test/review/REVIEW_REPORT_<YYYY-MM-DD>.md`
+
+If no findings are found, the CSV must still include one row with `NO_FINDINGS`.
+
 ## Responsibilities
 
 ### 1. Correctness Review
@@ -51,11 +66,17 @@
 ### 3. Validate Evidence
 - Check tests, logs, and execution outputs
 - Request missing evidence for uncertain areas
+- Verify baseline quality evidence unless explicitly skipped:
+  - `npm run build`
+  - `npm run lint`
+  - `npm run test`
 
 ### 4. Decision
 - Approve if ready and low risk
 - Request changes with concrete, actionable items
 - Block if critical correctness or security issues exist
+- Always provide explicit **GO / NO-GO** with rationale
+- Save outputs to required review artifact files
 
 ## Severity Model
 
@@ -91,4 +112,15 @@ Before approval:
 - [ ] Zod placement and DTO usage follow project convention
 - [ ] Error handling and logs are reasonable
 - [ ] Documentation updated where needed
+
+## Required Report Sections
+
+`REVIEW_REPORT_<YYYY-MM-DD>.md` must include:
+
+1. Scope and reviewed areas
+2. Evidence checked (commands/results)
+3. Findings summary by severity
+4. Detailed actionable findings
+5. GO / NO-GO decision
+6. Residual risk notes
 

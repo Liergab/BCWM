@@ -1,7 +1,8 @@
 import PersonRepository, { PersonEntity } from '../repository/personRepository'
-
-export type CreatePersonDTO = Pick<PersonEntity, 'name' | 'description' | 'address'>
-export type UpdatePersonDTO = Partial<CreatePersonDTO>
+import {
+  CreatePersonDTO,
+  UpdatePersonDTO,
+} from '../util/validation/personZod'
 
 class PersonService {
   async createPerson(data: CreatePersonDTO): Promise<PersonEntity> {

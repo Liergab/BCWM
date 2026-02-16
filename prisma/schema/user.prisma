@@ -2,6 +2,8 @@ model User {
   id                          String    @id @default(auto()) @map("_id") @db.ObjectId
   email                       String    @unique
   password                    String
+  role                        UserRole  @default(MEMBER)
+  status                      UserStatus @default(ACTIVE)
   personId                    String?   @unique @db.ObjectId
   person                      Person?   @relation(fields: [personId], references: [id])
   lastLogin                   DateTime  @default(now())
@@ -14,4 +16,17 @@ model User {
   updatedAt                   DateTime  @updatedAt
 
   @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN    @map("Super Admin")
+  FINANCE_OFFICER @map("Finance Officer")
+  PASTOR         @map("Pastor")
+  MINISTRY_LEADER @map("Ministry Leader")
+  MEMBER         @map("Member")
+}
+
+enum UserStatus {
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
 }

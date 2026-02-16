@@ -1,8 +1,10 @@
-import { Person, User } from '@prisma/client';
+import { Person, User, UserRole } from '@prisma/client';
 
 // Export Prisma-generated User type
 export type IUser = User;
 export type IPerson = Person;
+export type IUserRole = UserRole;
+export type IUserStatus = 'ACTIVE' | 'INACTIVE';
 
 // Address type (matches Prisma schema)
 export type AddressType = {
@@ -15,8 +17,12 @@ export type AddressType = {
 };
 
 export type PersonInput = {
-  name: string;
+  firstName: string;
+  lastName: string;
   description?: string | null;
+  birthday?: Date;
+  age?: number;
+  phoneNumber?: string;
   address?: AddressType;
 };
 
@@ -25,6 +31,8 @@ export type UserCreateInput = {
   name?: string;
   email: string;
   password: string;
+  role?: UserRole;
+  status?: IUserStatus;
   address?: AddressType;
   person?: PersonInput;
   lastLogin?: Date;

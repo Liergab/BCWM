@@ -1,6 +1,26 @@
 import { z } from "zod";
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/;
+const userRoleValues = ["SUPER_ADMIN", "FINANCE_OFFICER", "PASTOR", "MINISTRY_LEADER", "MEMBER"] as const;
+const userStatusValues = ["ACTIVE", "INACTIVE"] as const;
+const humanReadableRoles = ["Super Admin", "Finance Officer", "Pastor", "Ministry Leader", "Member"] as const;
+const humanReadableStatuses = ["active", "inactive"] as const;
+const userRoleSchema = z.preprocess((input) => {
+  if (typeof input !== "string") return input;
+  return input.trim().toUpperCase().replace(/\s+/g, "_");
+}, z.enum(userRoleValues, {
+  errorMap: () => ({
+    message: `Role must be one of: ${humanReadableRoles.join(", ")}`,
+  }),
+}));
+const userStatusSchema = z.preprocess((input) => {
+  if (typeof input !== "string") return input;
+  return input.trim().toUpperCase();
+}, z.enum(userStatusValues, {
+  errorMap: () => ({
+    message: `Status must be one of: ${humanReadableStatuses.join(", ")}`,
+  }),
+}));
 
 const addressSchema = z
   .object({
@@ -14,12 +34,23 @@ const addressSchema = z
   .optional();
 
 const personSchema = z.object({
-  name: z
-    .string({ required_error: "Person name is required" })
+  firstName: z
+    .string({ required_error: "Person first name is required" })
     .trim()
-    .min(2, "Person name must be at least 2 characters")
-    .max(100, "Person name must be at most 100 characters"),
+    .min(2, "Person first name must be at least 2 characters")
+    .max(100, "Person first name must be at most 100 characters"),
+  lastName: z
+    .string({ required_error: "Person last name is required" })
+    .trim()
+    .min(2, "Person last name must be at least 2 characters")
+    .max(100, "Person last name must be at most 100 characters"),
   description: z.string().trim().optional(),
+  birthday: z
+    .union([z.string().trim().datetime(), z.date()])
+    .transform((val) => new Date(val))
+    .optional(),
+  age: z.number().int().min(0).max(130).optional(),
+  phoneNumber: z.string().trim().min(7).max(20).optional(),
   address: addressSchema,
 });
 
@@ -44,6 +75,8 @@ export const ValidationSchemas = {
     password: z
       .string({ required_error: "Password is required" })
       .min(8, "Password must be at least 8 characters"),
+    role: userRoleSchema.optional(),
+    status: userStatusSchema.optional(),
     address: addressSchema,
     person: personSchema.optional(),
   }).refine((value) => Boolean(value.person || value.name), {
@@ -59,12 +92,25 @@ export const ValidationSchemas = {
     password: z.string({ required_error: "Password is required" }).min(1, "Password is required"),
   }),
 
+  verifyEmail: z.object({
+    email: z
+      .string({ required_error: "Email is required" })
+      .trim()
+      .email("Email must be a valid email address"),
+    verificationCode: z
+      .string({ required_error: "Verification code is required" })
+      .trim()
+      .regex(/^\d{4}$/, "Verification code must be a 4-digit code"),
+  }),
+
   updateUser: z
     .object({
       email: z.string().trim().email().optional(),
       password: z.string().min(8).optional(),
       person: personSchema.partial().optional(),
       isVerified: z.boolean().optional(),
+      role: userRoleSchema.optional(),
+      status: userStatusSchema.optional(),
     })
     .refine((value) => Object.keys(value).length > 0, {
       message: "At least one field is required for update",
@@ -103,6 +149,7 @@ export const ValidationSchemas = {
 export type IdParamType = z.infer<typeof ValidationSchemas.idParam>;
 export type CreateUserDTO = z.infer<typeof ValidationSchemas.createUser>;
 export type LoginDTO = z.infer<typeof ValidationSchemas.login>;
+export type VerifyEmailDTO = z.infer<typeof ValidationSchemas.verifyEmail>;
 export type UpdateUserDTO = z.infer<typeof ValidationSchemas.updateUser>;
 export type GetUserQueryDTO = z.infer<typeof ValidationSchemas.getQueryParams>;
 export type GetUsersQueryDTO = z.infer<typeof ValidationSchemas.getQueriesParams>;

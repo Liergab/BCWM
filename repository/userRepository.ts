@@ -23,11 +23,12 @@ class UserRepository extends GenericRepository<IUser> {
       where: {
         OR: [
           { email: { contains: searchTerm, mode: 'insensitive' } },
-          { person: { name: { contains: searchTerm, mode: 'insensitive' } } },
+          { person: { firstName: { contains: searchTerm, mode: 'insensitive' } } },
+          { person: { lastName: { contains: searchTerm, mode: 'insensitive' } } },
         ],
       },
       include: { person: true },
-    }) as IUser[];
+    } as any) as IUser[];
   }
 }
 

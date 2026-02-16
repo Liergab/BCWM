@@ -1,42 +1,73 @@
 import { comparePassword, hashPassword } from "../config/bcrypt";
+import { sendVerificationEmail, sendWelcomeEmail } from "../config/emails";
 import UserRepository from "../repository/userRepository";
 import { IUser } from "../types/index";
 import generateToken from "../util/generateToken";
 import parseFilterString from "../util/parseFilterString";
+import env from "../util/validate";
 import {
   CreateUserDTO,
   GetUserQueryDTO,
   GetUsersQueryDTO,
   LoginDTO,
   UpdateUserDTO,
+  VerifyEmailDTO,
 } from "../util/validation/userZod";
 
 class UserService {
+  private generateVerificationCode(): string {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+
+  private splitFullName(name?: string): { firstName: string; lastName: string } {
+    const normalized = (name || "").trim();
+    if (!normalized) {
+      return { firstName: "Member", lastName: "BCWM" };
+    }
+
+    const [firstName, ...lastNameParts] = normalized.split(/\s+/);
+    return {
+      firstName,
+      lastName: lastNameParts.join(" ") || "BCWM",
+    };
+  }
+
   // Create a new user
   async createUser(
     userData: CreateUserDTO
-  ): Promise<{ token: string; user: Omit<IUser, 'password'> }> {
+  ): Promise<{ token: string | null; user: Omit<IUser, 'password'>; message: string }> {
     const userExists = await UserRepository.getEmail(userData.email!);
     if (userExists) {
       throw new Error("User already exists");
     }
+    const verificationCode = this.generateVerificationCode();
+    const verificationTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     const hashedPassword = await hashPassword(userData.password!);
     const { person, name, address, ...accountData } = userData;
+    const splitName = this.splitFullName(name);
     const personPayload = person || {
-      name: name as string,
+      firstName: splitName.firstName,
+      lastName: splitName.lastName,
       address,
     };
     const newUser = await UserRepository.add({
       ...accountData,
       password: hashedPassword,
+      verificationToken: verificationCode,
+      verificationTokenExpiresAt,
+      isVerified: false,
       person: {
         create: personPayload,
       },
     } as any);
+    await sendVerificationEmail(newUser.email, verificationCode);
     const userWithPerson = await UserRepository.getWithPersonById(newUser.id);
-    const token = await generateToken(newUser.id); // Prisma uses 'id' not '_id'
     const { password: _, ...userWithoutPassword } = (userWithPerson || newUser) as any; // Prisma returns plain objects
-    return { user: userWithoutPassword, token };
+    return {
+      user: userWithoutPassword,
+      token: null,
+      message: "Registration successful. Please verify your email with the 4-digit code sent to you.",
+    };
   }
 
   async login(
@@ -53,12 +84,72 @@ class UserService {
     if (!isValidPassword) {
       throw new Error("Invalid Password");
     }
-    if (!userExists.isVerified) {
-      throw new Error("Account is not verified");
+    const userStatus = (userExists as any).status;
+    if (userStatus === "INACTIVE" || userStatus === "inactive") {
+      throw new Error(
+        `Account is inactive. Please contact BCWM email: ${env.EMAIL_TEST}`
+      );
     }
+    if (!userExists.isVerified) {
+      const verificationCode = this.generateVerificationCode();
+      const verificationTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await UserRepository.update(userExists.id, {
+        verificationToken: verificationCode,
+        verificationTokenExpiresAt,
+      } as any);
+      await sendVerificationEmail(userExists.email, verificationCode);
+
+      throw new Error(
+        "Account is not verified. We sent a new verification code to your email. Please use it to verify your account."
+      );
+    }
+    await UserRepository.update(userExists.id, {
+      status: "ACTIVE",
+      lastLogin: new Date(),
+    } as any);
+    const latestUser = await UserRepository.getWithPersonById(userExists.id);
     const token = await generateToken(userExists.id); // Prisma uses 'id' not '_id'
-    const { password: _, ...userWithoutPassword } = userExists; // Prisma returns plain objects
+    const { password: _, ...userWithoutPassword } = (latestUser || userExists) as any; // Prisma returns plain objects
     return { user: userWithoutPassword, token };
+  }
+
+  async verifyEmail(
+    verificationData: VerifyEmailDTO
+  ): Promise<{ token: string; user: Omit<IUser, "password">; message: string }> {
+    const user = await UserRepository.getEmail(verificationData.email);
+    if (!user) {
+      throw new Error("User does not exist");
+    }
+    if (user.isVerified) {
+      throw new Error("Account already verified");
+    }
+    if (!user.verificationToken || !user.verificationTokenExpiresAt) {
+      throw new Error("Verification code is not available");
+    }
+    if (new Date(user.verificationTokenExpiresAt).getTime() < Date.now()) {
+      throw new Error("Verification code expired");
+    }
+    if (user.verificationToken !== verificationData.verificationCode) {
+      throw new Error("Invalid verification code");
+    }
+
+    await UserRepository.update(user.id, {
+      isVerified: true,
+      verificationToken: null,
+      verificationTokenExpiresAt: null,
+    } as any);
+
+    const verifiedUser = await UserRepository.getWithPersonById(user.id);
+    const token = await generateToken(user.id);
+    const { password: _, ...userWithoutPassword } = (verifiedUser || user) as any;
+    await sendWelcomeEmail(user.email, "User");
+
+    return {
+      user: userWithoutPassword,
+      token,
+      message: "Email verified successfully.",
+    };
   }
 
   async getUserById(id: string): Promise<IUser | null> {

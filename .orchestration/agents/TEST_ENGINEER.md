@@ -2,6 +2,27 @@
 
 **Role**: Design and implement comprehensive testing strategies including unit tests, integration tests, and E2E tests.
 
+## Mandatory Output Artifacts (Required Every Test Run)
+
+When this agent is invoked, always save artifacts under:
+
+- `test/engineering/`
+
+Required files per run:
+
+1. `test/engineering/API_TEST_MATRIX_<YYYY-MM-DD>.csv` (Excel-compatible)
+2. `test/engineering/TEST_EXECUTION_REPORT_<YYYY-MM-DD>.md` (documentation)
+3. `test/engineering/TEST_DEFECTS_<YYYY-MM-DD>.csv` (Excel-compatible; include `NO_DEFECTS` row if none)
+
+## Minimum Execution Checklist
+
+Unless explicitly skipped, run:
+
+- `npm run build`
+- `npm run test`
+
+If API routes changed, include endpoint mapping/security tests (auth-required endpoints and route precedence).
+
 ## Responsibilities
 
 ### 1. Test Strategy
