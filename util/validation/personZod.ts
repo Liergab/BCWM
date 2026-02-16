@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { listQueryParams, paginationQueryParams, selectQueryParams } from './queryParamsZod'
 
 const objectIdRegex = /^[a-fA-F0-9]{24}$/
 
@@ -14,6 +15,8 @@ const addressSchema = z
   .optional()
 
 export const PersonValidationSchemas = {
+  getQueryParams: selectQueryParams,
+  getQueriesParams: selectQueryParams.merge(paginationQueryParams).merge(listQueryParams),
   idParam: z.object({
     id: z
       .string()
@@ -59,3 +62,5 @@ export const PersonValidationSchemas = {
 
 export type CreatePersonDTO = z.infer<typeof PersonValidationSchemas.createPerson>
 export type UpdatePersonDTO = z.infer<typeof PersonValidationSchemas.updatePerson>
+export type GetPersonQueryDTO = z.infer<typeof PersonValidationSchemas.getQueryParams>
+export type GetPersonsQueryDTO = z.infer<typeof PersonValidationSchemas.getQueriesParams>

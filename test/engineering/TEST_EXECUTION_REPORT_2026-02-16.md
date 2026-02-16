@@ -12,8 +12,8 @@
 
 ## Test Results Summary
 
-- Test suites: 4 passed / 4 total
-- Test cases: 26 passed / 26 total
+- Test suites: 6 passed / 6 total
+- Test cases: 38 passed / 38 total
 - Coverage generated: yes (`coverage/`)
 
 ## API Tests Executed
@@ -37,6 +37,16 @@
   - get by id not found
   - update success
   - delete success
+- Ledger immutable-flow API checks:
+  - create entry by finance role
+  - block create for non-finance role
+  - create reversal by id
+  - read access for leadership roles
+  - block patch/delete with immutable messages
+- Ledger service-unit checks:
+  - running balance progression
+  - reversal tally behavior
+  - immutable update/delete exceptions
 
 Scenario matrix file: `test/engineering/API_TEST_MATRIX_2026-02-16.csv`
 

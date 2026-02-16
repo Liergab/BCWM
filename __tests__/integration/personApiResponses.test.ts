@@ -63,9 +63,10 @@ describe('Person API response contracts', () => {
   })
 
   it('GET /persons returns data list wrapper', async () => {
-    personServiceMock.getAllPersons.mockResolvedValueOnce([
-      { id: '507f1f77bcf86cd799439011', firstName: 'Juan', lastName: 'Dela Cruz' },
-    ])
+    personServiceMock.getAllPersons.mockResolvedValueOnce({
+      data: [{ id: '507f1f77bcf86cd799439011', firstName: 'Juan', lastName: 'Dela Cruz' }],
+      pagination: { total: 1, page: 1, limit: 10, totalPages: 1, hasNext: false, hasPrev: false },
+    })
 
     const response = await request(app).get('/v1/api/persons')
     expect(response.status).toBe(200)

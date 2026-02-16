@@ -17,13 +17,23 @@ export const createPerson = async (
 }
 
 export const getAllPersons = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const data = await PersonService.getAllPersons()
-    res.status(200).json({ data })
+    const query = PersonValidationSchemas.getQueriesParams.parse({
+      select: req.query.select,
+      selects: req.query.selects,
+      page: req.query.page,
+      limit: req.query.limit,
+      filter: req.query.filter,
+      sort: req.query.sort,
+      queryArray: req.query.queryArray,
+      queryArrayType: req.query.queryArrayType,
+    })
+    const { data, pagination } = await PersonService.getAllPersons(query)
+    res.status(200).json({ data, pagination })
   } catch (error) {
     next(error)
   }
@@ -36,7 +46,11 @@ export const getPerson = async (
 ): Promise<void> => {
   try {
     const { id } = PersonValidationSchemas.idParam.parse({ id: req.params.id })
-    const data = await PersonService.getPersonById(id)
+    const query = PersonValidationSchemas.getQueryParams.parse({
+      select: req.query.select,
+      selects: req.query.selects,
+    })
+    const data = await PersonService.getPersonById(id, query)
     if (!data) {
       res.status(404).json({ message: 'Person not found' })
       return

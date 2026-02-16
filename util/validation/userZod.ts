@@ -124,6 +124,7 @@ export const ValidationSchemas = {
     filter: z.string().optional(),
     include: z.record(z.any()).optional(),
     select: z.union([z.string(), z.array(z.string())]).optional(),
+    selects: z.union([z.string(), z.array(z.string())]).optional(),
     sort: z.union([z.string(), z.record(z.any())]).optional(),
     queryArray: z
       .union([z.string(), z.number(), z.array(z.union([z.string(), z.number()]))])

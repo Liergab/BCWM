@@ -1,0 +1,22 @@
+model Event {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String?
+  ministryId       String?     @db.ObjectId
+  ministry         Ministry?   @relation(fields: [ministryId], references: [id])
+  eventDate        DateTime
+  location         String?
+  attendeeLimit    Int?
+  attendanceCount  Int         @default(0)
+  isPublished      Boolean     @default(false)
+  createdByUserId  String?     @db.ObjectId
+  createdByUser    User?       @relation("EventCreator", fields: [createdByUserId], references: [id])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([ministryId])
+  @@index([eventDate])
+  @@index([createdByUserId])
+
+  @@map("events")
+}

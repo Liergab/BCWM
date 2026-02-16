@@ -1,22 +1,22 @@
-import PersonRepository, { PersonEntity } from '../repository/personRepository'
+import EventRepository, { EventEntity } from '../repository/eventRepository'
 import { applyListQueryParams } from '../util/applyListQueryParams'
 import { buildNestedSelect, parseSelectFields } from '../util/buildNestedSelect'
 import {
-  CreatePersonDTO,
-  GetPersonQueryDTO,
-  GetPersonsQueryDTO,
-  UpdatePersonDTO,
-} from '../util/validation/personZod'
+  CreateEventDTO,
+  GetEventQueryDTO,
+  GetEventsQueryDTO,
+  UpdateEventDTO,
+} from '../util/validation/eventZod'
 import { buildPagination, type PaginationMeta } from '../util/buildPagination'
 
-class PersonService {
-  async createPerson(data: CreatePersonDTO): Promise<PersonEntity> {
-    return (await PersonRepository.add(data)) as PersonEntity
+class EventService {
+  async createEvent(data: CreateEventDTO): Promise<EventEntity> {
+    return (await EventRepository.add(data)) as EventEntity
   }
 
-  async getAllPersons(
-    query: GetPersonsQueryDTO = {}
-  ): Promise<{ data: PersonEntity[]; pagination: PaginationMeta }> {
+  async getAllEvents(
+    query: GetEventsQueryDTO = {}
+  ): Promise<{ data: EventEntity[]; pagination: PaginationMeta }> {
     const selectFields = parseSelectFields(query.select, query.selects)
     const dbParams: any = {}
     const { where, orderBy } = applyListQueryParams({}, query)
@@ -30,28 +30,28 @@ class PersonService {
     dbParams.skip = (page - 1) * limit
     dbParams.take = limit
     const [data, total] = await Promise.all([
-      PersonRepository.docs(dbParams),
-      PersonRepository.count(dbParams.where),
+      EventRepository.docs(dbParams),
+      EventRepository.count(dbParams.where),
     ])
     return { data, pagination: buildPagination(total, page, limit) }
   }
 
-  async getPersonById(id: string, query: GetPersonQueryDTO = {}): Promise<PersonEntity | null> {
+  async getEventById(id: string, query: GetEventQueryDTO = {}): Promise<EventEntity | null> {
     const selectFields = parseSelectFields(query.select, query.selects)
     const dbParams: any = {}
     if (selectFields.length > 0) {
       dbParams.select = buildNestedSelect(selectFields) as Record<string, boolean | object>
     }
-    return await PersonRepository.doc(id, dbParams)
+    return await EventRepository.doc(id, dbParams)
   }
 
-  async updatePerson(id: string, data: UpdatePersonDTO): Promise<PersonEntity | null> {
-    return await PersonRepository.update(id, data)
+  async updateEvent(id: string, data: UpdateEventDTO): Promise<EventEntity | null> {
+    return await EventRepository.update(id, data)
   }
 
-  async deletePerson(id: string): Promise<PersonEntity | null> {
-    return await PersonRepository.delete(id)
+  async deleteEvent(id: string): Promise<EventEntity | null> {
+    return await EventRepository.delete(id)
   }
 }
 
-export default new PersonService()
+export default new EventService()
