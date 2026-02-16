@@ -12,12 +12,12 @@
 
 - `npm run build` -> PASS
 - `npm run lint` -> FAIL (ESLint v9 flat-config mismatch)
-- `npm run test` -> FAIL (non-test files included as test suites)
+- `npm run test` -> PASS (6 suites / 38 tests, with worker-exit warning)
 
 ## Findings Summary
 
 - Critical: 1
-- High: 3
+- High: 2
 - Medium: 1
 - Low: 0
 
@@ -28,18 +28,17 @@ Detailed findings file: `test/review/REVIEW_FINDINGS_2026-02-16.csv`
 1. Critical: `PUT /users/me` accepts privileged fields (`role`, `isVerified`, `status`) via shared update schema.
 2. High: Inactive login flow has contradictory logic (blocked early; reactivation code unreachable).
 3. High: Lint gate broken under ESLint v9 due to missing flat config.
-4. High: Jest discovery includes files that are not actual tests, causing suite failures.
-5. Medium: User search uses `as any` Prisma query cast, reducing type safety.
+4. Medium: User search uses `as any` Prisma query cast, reducing type safety.
 
 ## Decision
 
 - **NO-GO**
 - Rationale:
   - Critical security defect remains open.
-  - Quality gates are not green (`lint` and `test` failing).
+  - Quality gates are not fully green (`lint` still failing).
 
 ## Residual Risks
 
 - Privilege escalation risk on self-update endpoint.
-- Regression detection confidence remains low until test/lint pipeline is fixed.
+- Lint gate remains red and can mask quality drift.
 - Prisma schema/client mismatch risk persists while any-casts are required.

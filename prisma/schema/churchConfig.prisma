@@ -1,0 +1,50 @@
+model ChurchConfig {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  churchName       String
+  shortName        String?
+  logoUrl          String?
+  denomination     String?
+  contactEmail     String?
+  contactPhone     String?
+  websiteUrl       String?
+  address          Address?
+  defaultTheme     ThemeSettings?
+  serviceSchedules ServiceSchedule[]
+  branches         Branch[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("churchConfigs")
+}
+
+model Branch {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  churchConfigId String      @db.ObjectId
+  churchConfig   ChurchConfig @relation(fields: [churchConfigId], references: [id])
+  name           String
+  isMain         Boolean     @default(false)
+  isActive       Boolean     @default(true)
+  contactEmail   String?
+  contactPhone   String?
+  address        Address?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([churchConfigId])
+  @@map("branches")
+}
+
+type ThemeSettings {
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+  darkMode       Boolean?
+}
+
+type ServiceSchedule {
+  dayOfWeek     String
+  serviceName   String
+  serviceTime   String
+  isRecurring   Boolean
+  locationLabel String?
+}

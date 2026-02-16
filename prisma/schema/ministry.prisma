@@ -1,0 +1,18 @@
+model Ministry {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String   @unique
+  description   String?
+  isActive      Boolean  @default(true)
+  leaderUserId  String?  @db.ObjectId
+  leader        User?    @relation("MinistryLeader", fields: [leaderUserId], references: [id])
+  scheduleDay   String?
+  scheduleTime  String?
+  members       Member[]
+  events        Event[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([leaderUserId])
+
+  @@map("ministries")
+}

@@ -1,3 +1,3 @@
 DefectID,Title,Severity,Area,Environment,StepsToReproduce,Expected,Actual,Status,Owner
 TED-001,Jest worker exits forcefully after tests,Medium,Test Stability,Local Windows,"Run npm run test","All workers exit gracefully","Jest warning: worker process failed to exit gracefully and was force exited",Open,Test Engineer
-TED-002,Checklist item coverage >70 not met,Medium,Coverage/Quality,Local Windows,"Run npm run test --coverage","Coverage >= 70% as checklist target","Current aggregate coverage is ~25.98%",Open,Test Engineer
+TED-002,Checklist item coverage >70 not met,Medium,Coverage/Quality,Local Windows,"Run npm run test --coverage","Coverage >= 70% as checklist target","Current aggregate coverage is ~24.22%",Open,Test Engineer

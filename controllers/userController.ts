@@ -174,6 +174,11 @@ export const getAllUsers = async (
       select: Array.isArray(req.query.select)
         ? req.query.select
         : [req.query.select].filter(Boolean),
+      selects: Array.isArray(req.query.selects)
+        ? req.query.selects
+        : req.query.selects
+          ? [req.query.selects]
+          : [],
       page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
     });
 

@@ -1,8 +1,8 @@
 ID,Scenario,Type,Priority,Expected Result,Actual Result,Status,Evidence
 QA-01,TypeScript build compiles project,Regression,High,"Build exits 0","Build exits 0 (tsc passed)",PASS,"npm run build"
 QA-02,ESLint quality check,Regression,High,"Lint exits 0","ESLint v9 config missing (eslint.config.js not found)",FAIL,"npm run lint"
-QA-03,Jest test suite health,Regression,High,"All test suites pass","2 suites fail: __tests__/setup.ts and services/test.ts contain no tests",FAIL,"npm run test"
-QA-04,Health endpoint automated contract,API Positive,High,"Health endpoint tests pass","health.test.ts passed (4 tests)",PASS,"npm run test -> __tests__/health.test.ts"
-QA-05,Protected route unauthorized access (/users/me),API Security,High,"401/403 when no auth token","Not executed in this run",NOT_EXECUTED,"Manual API test pending"
-QA-06,Register -> verify -> login flow,API Positive,High,"Valid auth lifecycle and correct status codes","Not executed in this run",NOT_EXECUTED,"Manual API test pending"
-QA-07,Person CRUD validation and error handling,API Functional,Medium,"Validation enforced and CRUD behaves correctly","Not executed in this run",NOT_EXECUTED,"Manual API test pending"
+QA-03,Jest test suite health,Regression,High,"All test suites pass","6 suites passed, 38 tests passed",PASS,"npm run test"
+QA-04,Health endpoint automated contract,API Positive,High,"Health endpoint tests pass","health.test.ts passed",PASS,"__tests__/health.test.ts"
+QA-05,Protected user route unauthorized behavior,API Security,High,"401 when no auth token","User route contract tests assert 401 unauthorized path",PASS,"__tests__/integration/userApiResponses.test.ts"
+QA-06,Person CRUD validation and response handling,API Functional,High,"Validation and CRUD response contracts behave correctly","6 person API response tests passed",PASS,"__tests__/integration/personApiResponses.test.ts"
+QA-07,Ledger immutable flow and reversal tally,API Functional,High,"Create+reversal updates running balance and blocks update/delete","12 ledger tests passed (API + service)",PASS,"__tests__/integration/ledgerEntryApiResponses.test.ts + __tests__/services/ledgerEntryServices.test.ts"

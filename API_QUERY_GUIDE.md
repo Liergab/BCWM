@@ -27,9 +27,19 @@ GET /v1/api/users?filter=address.city:Manila
 GET /v1/api/users?filter=address.province:California,address.city:Los Angeles
 ```
 
-### With Field Selection
+### With Field Selection (return only specific fields)
 ```bash
+GET /v1/api/users?select=email
+GET /v1/api/users?selects=email
 GET /v1/api/users?filter=isVerified:true&select=name&select=email&select=id
+GET /v1/api/users?selects=email,name,id
+```
+
+### Nested / relation fields (dot notation)
+```bash
+GET /v1/api/users?select=person.firstName
+GET /v1/api/users?select=email&select=person.firstName&select=person.lastName
+GET /v1/api/users?select=person
 ```
 
 ### With Pagination
@@ -47,7 +57,8 @@ GET /v1/api/users?filter=isVerified:true&sort={"name":"asc"}&page=1&limit=10
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `filter` | String | Exact-match filters | `filter=isVerified:true,name:John` |
-| `select` | Array | Fields to return | `select=name&select=email` |
+| `select` | Array | Fields to return; use `relation.field` for nested | `select=email` or `select=person.firstName` |
+| `selects` | String/Array | Same as `select` (alias) | `selects=email` or `selects=email,person.firstName` |
 | `sort` | JSON | Sort order | `sort={"name":"asc"}` |
 | `page` | Number | Page number | `page=1` |
 | `limit` | Number | Items per page | `limit=20` |

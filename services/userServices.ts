@@ -1,10 +1,12 @@
-import { comparePassword, hashPassword } from "../config/bcrypt";
-import { sendVerificationEmail, sendWelcomeEmail } from "../config/emails";
-import UserRepository from "../repository/userRepository";
-import { IUser } from "../types/index";
-import generateToken from "../util/generateToken";
-import parseFilterString from "../util/parseFilterString";
-import env from "../util/validate";
+import { comparePassword, hashPassword } from '../config/bcrypt';
+import { sendVerificationEmail, sendWelcomeEmail } from '../config/emails';
+import UserRepository from '../repository/userRepository';
+import { IUser } from '../types/index';
+import { buildNestedSelect, parseSelectFields } from '../util/buildNestedSelect';
+import { buildPagination } from '../util/buildPagination';
+import generateToken from '../util/generateToken';
+import { applyListQueryParams } from '../util/applyListQueryParams';
+import env from '../util/validate';
 import {
   CreateUserDTO,
   GetUserQueryDTO,
@@ -12,7 +14,21 @@ import {
   LoginDTO,
   UpdateUserDTO,
   VerifyEmailDTO,
-} from "../util/validation/userZod";
+} from '../util/validation/userZod';
+
+// Full person fields for "select=person" (bare relation name)
+const PERSON_SELECT_ALL: Record<string, boolean> = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  description: true,
+  birthday: true,
+  age: true,
+  phoneNumber: true,
+  address: true,
+  createdAt: true,
+  updatedAt: true,
+};
 
 class UserService {
   private generateVerificationCode(): string {
@@ -20,15 +36,15 @@ class UserService {
   }
 
   private splitFullName(name?: string): { firstName: string; lastName: string } {
-    const normalized = (name || "").trim();
+    const normalized = (name || '').trim();
     if (!normalized) {
-      return { firstName: "Member", lastName: "BCWM" };
+      return { firstName: 'Member', lastName: 'BCWM' };
     }
 
     const [firstName, ...lastNameParts] = normalized.split(/\s+/);
     return {
       firstName,
-      lastName: lastNameParts.join(" ") || "BCWM",
+      lastName: lastNameParts.join(' ') || 'BCWM',
     };
   }
 
@@ -38,7 +54,7 @@ class UserService {
   ): Promise<{ token: string | null; user: Omit<IUser, 'password'>; message: string }> {
     const userExists = await UserRepository.getEmail(userData.email!);
     if (userExists) {
-      throw new Error("User already exists");
+      throw new Error('User already exists');
     }
     const verificationCode = this.generateVerificationCode();
     const verificationTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -66,29 +82,23 @@ class UserService {
     return {
       user: userWithoutPassword,
       token: null,
-      message: "Registration successful. Please verify your email with the 4-digit code sent to you.",
+      message:
+        'Registration successful. Please verify your email with the 4-digit code sent to you.',
     };
   }
 
-  async login(
-    userData: LoginDTO
-  ): Promise<{ token: string; user: Omit<IUser, 'password'> }> {
+  async login(userData: LoginDTO): Promise<{ token: string; user: Omit<IUser, 'password'> }> {
     const userExists = await UserRepository.getEmail(userData.email!);
     if (!userExists) {
-      throw new Error("User does not exist");
+      throw new Error('User does not exist');
     }
-    const isValidPassword = await comparePassword(
-      userData.password!,
-      userExists.password!
-    );
+    const isValidPassword = await comparePassword(userData.password!, userExists.password!);
     if (!isValidPassword) {
-      throw new Error("Invalid Password");
+      throw new Error('Invalid Password');
     }
     const userStatus = (userExists as any).status;
-    if (userStatus === "INACTIVE" || userStatus === "inactive") {
-      throw new Error(
-        `Account is inactive. Please contact BCWM email: ${env.EMAIL_TEST}`
-      );
+    if (userStatus === 'INACTIVE' || userStatus === 'inactive') {
+      throw new Error(`Account is inactive. Please contact BCWM email: ${env.EMAIL_TEST}`);
     }
     if (!userExists.isVerified) {
       const verificationCode = this.generateVerificationCode();
@@ -101,11 +111,11 @@ class UserService {
       await sendVerificationEmail(userExists.email, verificationCode);
 
       throw new Error(
-        "Account is not verified. We sent a new verification code to your email. Please use it to verify your account."
+        'Account is not verified. We sent a new verification code to your email. Please use it to verify your account.'
       );
     }
     await UserRepository.update(userExists.id, {
-      status: "ACTIVE",
+      status: 'ACTIVE',
       lastLogin: new Date(),
     } as any);
     const latestUser = await UserRepository.getWithPersonById(userExists.id);
@@ -116,22 +126,22 @@ class UserService {
 
   async verifyEmail(
     verificationData: VerifyEmailDTO
-  ): Promise<{ token: string; user: Omit<IUser, "password">; message: string }> {
+  ): Promise<{ token: string; user: Omit<IUser, 'password'>; message: string }> {
     const user = await UserRepository.getEmail(verificationData.email);
     if (!user) {
-      throw new Error("User does not exist");
+      throw new Error('User does not exist');
     }
     if (user.isVerified) {
-      throw new Error("Account already verified");
+      throw new Error('Account already verified');
     }
     if (!user.verificationToken || !user.verificationTokenExpiresAt) {
-      throw new Error("Verification code is not available");
+      throw new Error('Verification code is not available');
     }
     if (new Date(user.verificationTokenExpiresAt).getTime() < Date.now()) {
-      throw new Error("Verification code expired");
+      throw new Error('Verification code expired');
     }
     if (user.verificationToken !== verificationData.verificationCode) {
-      throw new Error("Invalid verification code");
+      throw new Error('Invalid verification code');
     }
 
     await UserRepository.update(user.id, {
@@ -143,12 +153,12 @@ class UserService {
     const verifiedUser = await UserRepository.getWithPersonById(user.id);
     const token = await generateToken(user.id);
     const { password: _, ...userWithoutPassword } = (verifiedUser || user) as any;
-    await sendWelcomeEmail(user.email, "User");
+    await sendWelcomeEmail(user.email, 'User');
 
     return {
       user: userWithoutPassword,
       token,
-      message: "Email verified successfully.",
+      message: 'Email verified successfully.',
     };
   }
 
@@ -157,72 +167,39 @@ class UserService {
       return await UserRepository.getWithPersonById(id);
     } catch (error) {
       console.error(error);
-      throw new Error("Failed to retrieve user");
+      throw new Error('Failed to retrieve user');
     }
   }
 
   async getUsers(params: GetUsersQueryDTO): Promise<{ users: IUser[]; pagination: any }> {
     if (!params) {
-      throw new Error("Invalid parameters for getting all users");
+      throw new Error('Invalid parameters for getting all users');
     }
 
     try {
       const dbParams: any = { where: {} };
 
-      // Handle include for relations (e.g., include: { posts: true })
-      if (params.include && typeof params.include === 'object') {
+      const selectFields = parseSelectFields(params.select, params.selects);
+      const hasSelect = selectFields.length > 0;
+
+      // Handle include for relations — only when not using field selection
+      // (Prisma: select and include cannot be used together)
+      if (hasSelect) {
+        dbParams.select = buildNestedSelect(selectFields, { person: PERSON_SELECT_ALL }) as Record<string, boolean | object>;
+      } else if (params.include && typeof params.include === 'object') {
         dbParams.include = params.include;
       } else {
         dbParams.include = { person: true };
       }
 
-      // Handle query array (Prisma uses 'in' instead of '$in')
-      const queryArray = Array.isArray(params.queryArray)
-        ? params.queryArray
-        : params.queryArray !== undefined
-          ? [params.queryArray]
-          : [];
-      const queryArrayType = Array.isArray(params.queryArrayType)
-        ? params.queryArrayType
-        : params.queryArrayType !== undefined
-          ? [params.queryArrayType]
-          : [];
-
-      if (queryArray.length > 0 && queryArrayType.length > 0) {
-
-        queryArrayType.forEach((type: string | number) => {
-          const trimmedType = String(type).trim();
-          dbParams.where[trimmedType] = { in: queryArray };
-        });
-      }
-
-      // Handle simple filters (e.g., "isVerified:true,name:John" or "address.city:Manila")
-      if (params.filter && typeof params.filter === 'string') {
-        const parsedFilter = parseFilterString(params.filter);
-        if (parsedFilter) {
-          dbParams.where = { ...dbParams.where, ...parsedFilter };
-        }
-      }
-
-      // Handle sorting
-      if (params.sort) {
-        dbParams.orderBy = params.sort;
-      }
-
-      // Handle field selection (Prisma uses 'select')
-      // Note: select and include cannot be used together in Prisma
-      if (params.select && !dbParams.include) {
-        const selectFields = Array.isArray(params.select)
-          ? params.select.filter((f: string) => f && f.trim())
-          : [params.select].filter((f: string) => f && f.trim());
-
-        if (selectFields.length > 0) {
-          dbParams.select = {};
-          selectFields.forEach((field: string) => {
-            dbParams.select[field] = true;
-          });
-        }
-      }
+      const { where, orderBy } = applyListQueryParams(dbParams.where, {
+        filter: params.filter,
+        sort: params.sort,
+        queryArray: params.queryArray,
+        queryArrayType: params.queryArrayType,
+      });
+      dbParams.where = where;
+      if (orderBy != null) dbParams.orderBy = orderBy;
 
       // Pagination
       const page = params.page || 1;
@@ -230,22 +207,12 @@ class UserService {
       dbParams.skip = (page - 1) * limit;
       dbParams.take = limit;
 
-      const [users, totalItems] = await Promise.all([
+      const [users, total] = await Promise.all([
         UserRepository.docs(dbParams),
         UserRepository.count(dbParams.where),
       ]);
 
-      const totalPages = Math.ceil(totalItems / limit);
-      const pagination = {
-        totalItems,
-        totalPages,
-        currentPage: page,
-        pageSize: limit,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      };
-
-      return { users, pagination };
+      return { users, pagination: buildPagination(total, page, limit) };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(error.message);
@@ -256,10 +223,7 @@ class UserService {
   }
 
   // Update user details by ID
-  async updateUser(
-    id: string,
-    userData: UpdateUserDTO
-  ): Promise<IUser | null> {
+  async updateUser(id: string, userData: UpdateUserDTO): Promise<IUser | null> {
     try {
       const { person, ...accountData } = userData;
       const updateData: any = { ...accountData };
@@ -281,7 +245,7 @@ class UserService {
       return await UserRepository.getWithPersonById(id);
     } catch (error) {
       console.error(error);
-      throw new Error("Failed to update user");
+      throw new Error('Failed to update user');
     }
   }
 
@@ -291,7 +255,7 @@ class UserService {
       return await UserRepository.delete(id);
     } catch (error) {
       console.error(error);
-      throw new Error("Failed to delete user");
+      throw new Error('Failed to delete user');
     }
   }
 
@@ -301,30 +265,22 @@ class UserService {
       return await UserRepository.searchByEmailOrPersonName(search);
     } catch (error) {
       console.error(error);
-      throw new Error("Failed to search users");
+      throw new Error('Failed to search users');
     }
   }
 
   async getUser(id: string, params: GetUserQueryDTO): Promise<IUser | null> {
     if (!id) {
-      throw new Error("User ID is required");
+      throw new Error('User ID is required');
     }
 
     try {
       const dbParams: any = {};
 
-      // Handle field selection (Prisma uses 'select')
-      if (params.select) {
-        const selectFields = Array.isArray(params.select)
-          ? params.select.filter((f: string) => f && f.trim())
-          : [params.select].filter((f: string) => f && f.trim());
-
-        if (selectFields.length > 0) {
-          dbParams.select = {};
-          selectFields.forEach((field: string) => {
-            dbParams.select[field] = true;
-          });
-        }
+      // Handle field selection (supports dot notation e.g. person.firstName)
+      const selectFields = parseSelectFields(params.select, undefined);
+      if (selectFields.length > 0) {
+        dbParams.select = buildNestedSelect(selectFields, { person: PERSON_SELECT_ALL }) as Record<string, boolean | object>;
       }
 
       if (!dbParams.select) {

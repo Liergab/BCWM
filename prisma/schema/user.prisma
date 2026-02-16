@@ -6,6 +6,10 @@ model User {
   status                      UserStatus @default(ACTIVE)
   personId                    String?   @unique @db.ObjectId
   person                      Person?   @relation(fields: [personId], references: [id])
+  member                      Member?
+  ledMinistries               Ministry[] @relation("MinistryLeader")
+  createdEvents               Event[]    @relation("EventCreator")
+  ledgerEntries               LedgerEntry[]
   lastLogin                   DateTime  @default(now())
   isVerified                  Boolean   @default(false)
   resetPasswordToken          String?

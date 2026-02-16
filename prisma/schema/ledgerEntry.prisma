@@ -1,0 +1,40 @@
+model LedgerEntry {
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  transactionId    String      @unique
+  entryDate        DateTime    @default(now())
+  type             LedgerType
+  amount           Float
+  signedAmount     Float
+  runningBalance   Float
+  serviceName      String?
+  paymentMode      PaymentMode
+  note             String?
+  enteredByUserId  String      @db.ObjectId
+  enteredByUser    User        @relation(fields: [enteredByUserId], references: [id])
+  reversalOfId     String?     @db.ObjectId
+  reversalOf       LedgerEntry? @relation("LedgerReversal", fields: [reversalOfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reversedBy       LedgerEntry[] @relation("LedgerReversal")
+  createdAt        DateTime    @default(now())
+
+  @@index([entryDate])
+  @@index([type])
+  @@index([enteredByUserId])
+  @@index([reversalOfId])
+
+  @@map("ledgerEntries")
+}
+
+enum LedgerType {
+  OPENING_BALANCE
+  TITHE
+  OFFERING
+  DONATION
+  EXPENSE
+  REVERSAL
+}
+
+enum PaymentMode {
+  CASH
+  BANK
+  MOBILE
+}
