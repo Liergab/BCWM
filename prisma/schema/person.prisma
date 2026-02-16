@@ -1,0 +1,18 @@
+model Person {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  address     Address?
+  user        User?
+
+  @@map("persons")
+}
+
+type Address {
+  street       String?
+  barangay     String?
+  city         String?
+  municipality String?
+  province     String?
+  postalCode   String?
+}
